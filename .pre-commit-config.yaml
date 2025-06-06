@@ -1,5 +1,5 @@
 default_language_version:
-  python: python3.12
+  python: python3.10
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -46,6 +46,15 @@ repos:
         types_or: [markdown, yaml, toml, json, dockerfile, shell]
         additional_dependencies: ["prettier@3.1.0", "prettier-plugin-sh@0.13.1"]
         args: [--print-width=80, --prose-wrap=always]
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: Run pytest
+        entry: pytest --maxfail=1 -q
+        language: system
+        pass_filenames: false
+        always_run: true
 #
 # more to come (from https://dev.funkwhale.audio/funkwhale/funkwhale/-/blob/develop/.pre-commit-config.yaml)
 # - repo: https://github.com/python-poetry/poetry
