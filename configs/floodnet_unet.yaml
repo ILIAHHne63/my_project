@@ -1,0 +1,46 @@
+seed: 42
+
+experiment:
+  name: "floodnet_unet"
+  output_dir: "experiments/floodnet_unet" # куда сохранять логи и чекпоинты
+
+data:
+  data_dir: "tiny-floodnet-challenge" # папка, где лежат train/image, train/mask, test/...
+  img_size: 256
+  batch_size: 4
+  num_workers: 2
+  pin_memory: True
+
+model:
+  num_classes: 8
+  lr: 0.0001
+
+trainer:
+  max_epochs: 20
+  accelerator: "gpu" # или "cpu"
+  devices: 1
+  deterministic: True
+  benchmark: True
+  val_check_interval: 1.0
+  precision: 32
+  default_root_dir: "experiments/floodnet_unet" # автоматически подставится в ModelCheckpoint и логи
+
+callbacks:
+  checkpoint:
+    enabled: True
+    monitor: "val_mIoU"
+    save_top_k: 3
+    mode: "max"
+    dirpath: "experiments/floodnet_unet/checkpoints"
+    filename: "unet-{epoch:02d}-{val_mIoU:.4f}"
+  early_stop:
+    enabled: False # для примера отключим
+  lr_monitor:
+    enabled: False
+  device_stats:
+    enabled: False
+
+logger:
+  type: "tensorboard"
+  save_dir: "tb_logs"
+  name: "floodnet_unet"
