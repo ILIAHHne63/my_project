@@ -1,4 +1,6 @@
 [core]
-    remote = mygdrive
-['remote "mygdrive"']
-    url = gdrive://17fVno9Dgm6RrLuntWnV4OhL-BCYQnmjp
+    remote = data
+['remote "data"']
+    url = /Users/iliastepanov/dvc-storage/data
+['remote "src"']
+    url = /Users/iliastepanov/dvc-storage/src
