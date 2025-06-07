@@ -7,6 +7,7 @@ import yaml
 from PIL import Image
 
 from ..data.datamodule import FloodNetDataModule
+from ..data.dataset_download import download_data_from_gdrive_folder
 from ..models.unet_lightning import UNetLitModule
 from ..utils.seed import seed_everything
 
@@ -24,12 +25,18 @@ def save_mask(mask_tensor: torch.Tensor, output_path: str):
     img.save(output_path)
 
 
-def main(config_path: str, checkpoint_path: str, output_dir: str):
+def main(
+    config_path: str, checkpoint_path: str, output_dir: str, need_data_download: bool
+):
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
 
     seed_everything(cfg["seed"])
     os.makedirs(output_dir, exist_ok=True)
+
+    if need_data_download:
+        download_data_from_gdrive_folder()
+
     dm = FloodNetDataModule(
         data_dir=cfg["data"]["data_dir"],
         img_size=cfg["data"]["img_size"],
@@ -80,6 +87,12 @@ if __name__ == "__main__":
         default="inference_outputs",
         help="Directory to save predicted masks",
     )
-
+    parser.add_argument(
+        "--need_data_download",
+        "-n",
+        type=bool,
+        default=False,
+        help="Do I need to download the dataset",
+    )
     args = parser.parse_args()
-    main(args.config, args.checkpoint, args.output)
+    main(args.config, args.checkpoint, args.output, args.need_data_download)

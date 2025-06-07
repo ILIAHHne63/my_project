@@ -6,30 +6,25 @@ from pytorch_lightning import Trainer
 
 from ..callbacks.callbacks import get_callbacks
 from ..data.datamodule import FloodNetDataModule
+from ..data.dataset_download import download_data_from_gdrive_folder
 from ..loggers.tensorboard_logger import get_tensorboard_logger
 from ..models.unet_lightning import UNetLitModule
 from ..utils.seed import seed_everything
 
-# Если понадобится Wandb:
-# from loggers.wandb_logger import get_wandb_logger
 
-
-def main(config_path: str):
-    # 1. Загружаем конфиг
+def main(config_path: str, need_data_download: bool):
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
 
-    # 2. Устанавливаем сид для воспроизводимости
     seed_everything(cfg["seed"])
-
-    # 3. Создаём выходную директорию эксперимента
     output_dir = cfg["experiment"]["output_dir"]
     os.makedirs(output_dir, exist_ok=True)
-    # Сохраним копию конфига туда
     with open(os.path.join(output_dir, "used_config.yaml"), "w") as f:
         yaml.dump(cfg, f)
 
-    # 4. Инициализируем DataModule
+    if need_data_download:
+        download_data_from_gdrive_folder()
+
     dm = FloodNetDataModule(
         data_dir=cfg["data"]["data_dir"],
         img_size=cfg["data"]["img_size"],
@@ -40,25 +35,17 @@ def main(config_path: str):
     dm.prepare_data()
     dm.setup()
 
-    # 5. Инициализируем LightningModule
     lit_model = UNetLitModule(cfg)
 
-    # 6. Выбираем логгер
     logger_type = cfg["logger"]["type"]
     loggers = []
     if logger_type == "tensorboard":
         tb_logger = get_tensorboard_logger(cfg["logger"])
         loggers.append(tb_logger)
-    # elif logger_type == "wandb":
-    #     wandb_logger = get_wandb_logger(cfg["logger"])
-    #     loggers.append(wandb_logger)
 
     logger_collection = loggers or None
-
-    # 7. Колбэки
     callbacks = get_callbacks(cfg)
 
-    # 8. Параметры Trainer
     trainer_params = {
         "max_epochs": cfg["trainer"]["max_epochs"],
         "accelerator": cfg["trainer"]["accelerator"],
@@ -74,15 +61,7 @@ def main(config_path: str):
     }
 
     trainer = Trainer(**trainer_params)
-
-    # 9. Запускаем обучение
     trainer.fit(lit_model, datamodule=dm)
-
-    # 10. Тестирование (если нужно)
-    # trainer.test(lit_model, datamodule=dm)
-
-    # 11. Опционально: predict
-    # trainer.predict(lit_model, datamodule=dm)
 
 
 if __name__ == "__main__":
@@ -94,5 +73,12 @@ if __name__ == "__main__":
         default="configs/floodnet_unet.yaml",
         help="Path to config file",
     )
+    parser.add_argument(
+        "--need_data_download",
+        "-n",
+        type=bool,
+        default=False,
+        help="Do I need to download the dataset",
+    )
     args = parser.parse_args()
-    main(args.config)
+    main(args.config, args.need_data_download)
