@@ -131,4 +131,5 @@ dmypy.json
 tb_logs/
 experiments/
 
-tiny-floodnet-challenge/
+data/*
+!data/*.dvc
