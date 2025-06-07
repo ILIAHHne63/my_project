@@ -131,5 +131,5 @@ dmypy.json
 tb_logs/
 experiments/
 
-data/*
-!data/*.dvc
+# data/*
+# !data/*.dvc
