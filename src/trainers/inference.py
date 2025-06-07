@@ -12,9 +12,9 @@ import torch
 import yaml
 from PIL import Image
 
-from data.datamodule import FloodNetDataModule
-from models.unet_lightning import UNetLitModule
-from utils.seed import seed_everything
+from ..data.datamodule import FloodNetDataModule
+from ..models.unet_lightning import UNetLitModule
+from ..utils.seed import seed_everything
 
 
 def save_mask(mask_tensor: torch.Tensor, output_path: str):
