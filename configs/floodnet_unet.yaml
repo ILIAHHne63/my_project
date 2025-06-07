@@ -5,7 +5,7 @@ experiment:
   output_dir: "experiments/floodnet_unet" # куда сохранять логи и чекпоинты
 
 data:
-  data_dir: "/Users/iliastepanov/MLOPS_Project/my-project/data" # папка, где лежат train/image, train/mask, test/...
+  data_dir: "data/" # папка, где лежат train/image, train/mask, test/...
   img_size: 256
   batch_size: 4
   num_workers: 2
@@ -32,7 +32,7 @@ callbacks:
     save_top_k: 3
     mode: "max"
     dirpath: "experiments/floodnet_unet/checkpoints"
-    filename: "unet-{epoch:02d}-{val_mIoU:.4f}"
+    filename: "unet-{epoch:02d}"
   early_stop:
     enabled: False # для примера отключим
   lr_monitor:

@@ -11,32 +11,58 @@ from ..data.dataset_download import download_data_from_gdrive_folder
 from ..models.unet_lightning import UNetLitModule
 from ..utils.seed import seed_everything
 
+# Цветовая палитра для классов FloodNet
+PALETTE = {
+    0: (0, 0, 0),  # фон
+    1: (128, 0, 0),  # класс 1
+    2: (0, 128, 0),  # класс 2
+    3: (128, 128, 0),  # класс 3
+    4: (0, 0, 128),  # класс 4
+    5: (128, 0, 128),  # класс 5
+    6: (0, 128, 128),  # класс 6
+    7: (128, 128, 128),  # класс 7
+}
 
-def save_mask(mask_tensor: torch.Tensor, output_path: str):
+
+def apply_palette(mask_np: np.ndarray, palette: dict) -> Image.Image:
     """
-    Сохраняет одномерный тензор меток (H×W) в PNG-файл с палитрой
-    (каждый класс — свой цвет).
-    mask_tensor: torch.LongTensor, shape [H, W], значения от 0
-    до num_classes-1
-    output_path: путь, куда сохранить mask.png
+    Преобразует 2D-массив меток в RGB-изображение по палитре.
+    """
+    h, w = mask_np.shape
+    color_img = np.zeros((h, w, 3), dtype=np.uint8)
+    for cls_id, color in palette.items():
+        color_img[mask_np == cls_id] = color
+    return Image.fromarray(color_img)
+
+
+def save_mask(mask_tensor: torch.Tensor, output_path: str, palette: dict):
+    """
+    Сохраняет тензор меток в цветное PNG-изображение.
     """
     mask_np = mask_tensor.detach().cpu().numpy().astype(np.uint8)
-    img = Image.fromarray(mask_np, mode="L")
+    img = apply_palette(mask_np, palette)
     img.save(output_path)
 
 
 def main(
     config_path: str, checkpoint_path: str, output_dir: str, need_data_download: bool
 ):
+    # Загрузка конфига и фиксация сидов
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
-
     seed_everything(cfg["seed"])
-    os.makedirs(output_dir, exist_ok=True)
 
+    # Создаем папки для GT и предсказаний
+    gt_dir = os.path.join(output_dir, "gt")
+    pred_dir = os.path.join(output_dir, "predicted")
+    os.makedirs(gt_dir, exist_ok=True)
+    os.makedirs(pred_dir, exist_ok=True)
+
+    # Скачать данные при необходимости
     if need_data_download:
         download_data_from_gdrive_folder()
 
+    # Инициализация DataModule
     dm = FloodNetDataModule(
         data_dir=cfg["data"]["data_dir"],
         img_size=cfg["data"]["img_size"],
@@ -47,25 +73,33 @@ def main(
     dm.prepare_data()
     dm.setup(stage="test")
 
+    # Загрузка модели
     lit_model = UNetLitModule.load_from_checkpoint(checkpoint_path, cfg=cfg)
     lit_model.eval()
     lit_model.freeze()
 
+    # Инференс
     test_loader = dm.test_dataloader()
     for idx, batch in enumerate(test_loader):
-        images, _ = batch
+        images, gt_masks = batch
         images = images.to(lit_model.device)
 
         with torch.no_grad():
             logits = lit_model(images)
-
         preds = torch.argmax(logits, dim=1).squeeze(0)
-        out_mask_path = os.path.join(output_dir, f"prediction_{idx:04d}.png")
-        save_mask(preds, out_mask_path)
+        gt = gt_masks.squeeze(0)
+
+        # Пути сохранения масок
+        gt_path = os.path.join(gt_dir, f"gt_{idx:04d}.png")
+        pred_path = os.path.join(pred_dir, f"pred_{idx:04d}.png")
+
+        # Сохранение
+        save_mask(gt, gt_path, PALETTE)
+        save_mask(preds, pred_path, PALETTE)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="FloodNet UNet Inference")
+    parser = argparse.ArgumentParser(description="FloodNet UNet Inference with Palette")
     parser.add_argument(
         "--config",
         "-c",
@@ -84,15 +118,14 @@ if __name__ == "__main__":
         "--output",
         "-o",
         type=str,
-        default="inference_outputs",
-        help="Directory to save predicted masks",
+        default="outputs",
+        help="Directory to save GT and predicted masks",
     )
     parser.add_argument(
         "--need_data_download",
         "-n",
         type=bool,
-        default=False,
-        help="Do I need to download the dataset",
+        help="Download dataset if needed",
     )
     args = parser.parse_args()
     main(args.config, args.checkpoint, args.output, args.need_data_download)
