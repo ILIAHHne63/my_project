@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "my-project"
+name = "unet_prod"
 version = "0.1.0"
 description = ""
 authors = ["Ilia Stepanov <iliatut94@gmail.com>"]
