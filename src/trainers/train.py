@@ -3,13 +3,12 @@ import os
 
 import yaml
 from pytorch_lightning import Trainer
-from pytorch_lightning.loggers import LoggerCollection
 
-from callbacks.callbacks import get_callbacks
-from data.datamodule import FloodNetDataModule
-from loggers.tensorboard_logger import get_tensorboard_logger
-from models.unet_lightning import UNetLitModule
-from utils.seed import seed_everything
+from ..callbacks.callbacks import get_callbacks
+from ..data.datamodule import FloodNetDataModule
+from ..loggers.tensorboard_logger import get_tensorboard_logger
+from ..models.unet_lightning import UNetLitModule
+from ..utils.seed import seed_everything
 
 # Если понадобится Wandb:
 # from loggers.wandb_logger import get_wandb_logger
@@ -54,7 +53,7 @@ def main(config_path: str):
     #     wandb_logger = get_wandb_logger(cfg["logger"])
     #     loggers.append(wandb_logger)
 
-    logger_collection = LoggerCollection(loggers) if loggers else None
+    logger_collection = loggers or None
 
     # 7. Колбэки
     callbacks = get_callbacks(cfg)

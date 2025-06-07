@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 import torch
 from torch import nn
 
-from models.unet_model import UNet
+from .unet_model import UNet
 
 
 def calc_val_data(preds: torch.Tensor, masks: torch.Tensor, num_classes: int):

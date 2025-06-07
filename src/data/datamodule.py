@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
-from data.dataset import FloodNetDataset
+from .dataset import FloodNetDataset
 
 
 class FloodNetDataModule(pl.LightningDataModule):
@@ -36,7 +36,7 @@ class FloodNetDataModule(pl.LightningDataModule):
                 data_path=self.data_dir,
                 phase="train",
                 img_size=self.img_size,
-                augment=True,  # аугментации только для train
+                augment=False,  # аугментации только для train
             )
             # Поскольку у нас нет отдельной папки val,
             # будем валидировать на тех же 'test' данных
