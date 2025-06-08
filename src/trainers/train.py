@@ -1,3 +1,5 @@
+# src/trainers/train.py
+
 import os
 
 import hydra
@@ -7,7 +9,7 @@ from pytorch_lightning import Trainer
 from ..callbacks.callbacks import get_callbacks
 from ..data.datamodule import FloodNetDataModule
 from ..data.dataset_download import download_data_from_gdrive_folder
-from ..loggers.logger import get_mlflow_logger
+from ..loggers.logger import get_loggers
 from ..models.unet_lightning import UNetLitModule
 from ..utils.seed import seed_everything
 
@@ -38,10 +40,11 @@ def main(cfg: DictConfig):
 
     lit_model = UNetLitModule(cfg)
 
-    loggers = []
-    ml_cfg = cfg["logger"]["mlflow"]
-    if ml_cfg.get("enable", False):
-        loggers.append(get_mlflow_logger(cfg))
+    # Получаем список логгеров (MLflow и/или TensorBoard)
+    loggers = get_loggers(cfg)
+
+    # Получаем список коллбеков (ModelCheckpoint + SaveMetricsPlotCallback, если включено)
+    callbacks = get_callbacks(cfg)
 
     trainer = Trainer(
         max_epochs=cfg.trainer.max_epochs,
@@ -53,7 +56,7 @@ def main(cfg: DictConfig):
         precision=cfg.trainer.precision,
         default_root_dir=cfg.trainer.default_root_dir,
         logger=loggers or None,
-        callbacks=get_callbacks(cfg),
+        callbacks=callbacks,
         enable_progress_bar=True,
     )
 

@@ -1,4 +1,5 @@
 callbacks:
+  metrics_plot: true
   checkpoint:
     enabled: True
     monitor: "val_mIoU"

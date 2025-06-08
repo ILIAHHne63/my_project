@@ -2,6 +2,7 @@ inference:
   output_dir: "outputs"
   need_data_download: false
   batch_size: 1
+  model: "experiments/floodnet_unet/checkpoints/cpkt-unet.ckpt"
 
 palette:
   0: [0, 0, 0]

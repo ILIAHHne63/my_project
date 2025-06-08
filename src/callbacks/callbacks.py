@@ -1,9 +1,13 @@
+import os
+
 from pytorch_lightning.callbacks import (
     DeviceStatsMonitor,
     EarlyStopping,
     LearningRateMonitor,
     ModelCheckpoint,
 )
+
+from .plot_callbacks import SaveMetricsPlotCallback
 
 
 def get_callbacks(cfg: dict):
@@ -43,5 +47,10 @@ def get_callbacks(cfg: dict):
             log_cpu_stats=ds_cfg.get("log_cpu_stats", False),
         )
         callbacks.append(ds_mon)
+
+    if cfg.callbacks.get("metrics_plot", False):
+        tb_cfg = cfg.logger.tensorboard
+        save_dir = os.path.join(tb_cfg["save_dir"], tb_cfg["name"])
+        callbacks.append(SaveMetricsPlotCallback(save_dir=save_dir))
 
     return callbacks
