@@ -1,0 +1,18 @@
+# configs/config.yaml
+defaults:
+  - data
+  - experiment
+  - model
+  - trainer
+  - callbacks
+  - logger
+  - inference
+  - downloads
+
+seed: 42
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: .

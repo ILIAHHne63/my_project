@@ -130,6 +130,10 @@ dmypy.json
 
 tb_logs/
 experiments/
+outputs/
+*.part
+
+*.gz
 
 # data/*
 # !data/*.dvc

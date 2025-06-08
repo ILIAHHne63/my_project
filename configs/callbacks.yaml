@@ -1,0 +1,14 @@
+callbacks:
+  checkpoint:
+    enabled: True
+    monitor: "val_mIoU"
+    save_top_k: 3
+    mode: "max"
+    dirpath: "experiments/floodnet_unet/checkpoints"
+    filename: "unet-{epoch:02d}"
+  early_stop:
+    enabled: False
+  lr_monitor:
+    enabled: False
+  device_stats:
+    enabled: False

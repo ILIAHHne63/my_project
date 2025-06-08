@@ -1,0 +1,3 @@
+experiment:
+  name: "floodnet_unet"
+  output_dir: "experiments/floodnet_unet" # куда сохранять логи и чекпоинты

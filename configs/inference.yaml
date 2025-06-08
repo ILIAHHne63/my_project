@@ -1,0 +1,14 @@
+inference:
+  output_dir: "outputs"
+  need_data_download: false
+  batch_size: 1
+
+palette:
+  0: [0, 0, 0]
+  1: [128, 0, 0]
+  2: [0, 128, 0]
+  3: [128, 128, 0]
+  4: [0, 0, 128]
+  5: [128, 0, 128]
+  6: [0, 128, 128]
+  7: [128, 128, 128]

@@ -1,0 +1,7 @@
+logger:
+  mlflow:
+    save_dir: "plots/mlflow_logs"
+    name: "floodnet_unet"
+    enable: true
+    experiment_name: "FloodNet_MLFlow"
+    tracking_uri: "http://127.0.0.1:8080"

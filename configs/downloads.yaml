@@ -1,0 +1,12 @@
+download:
+  folder_id: "1AJ8Ufs9J4QgIjRoet9DG5TFrNAgmtQJ0"
+  dest_dir: "data"
+  tar_name: "tiny-floodnet-challenge.tar.gz"
+  subsets:
+    - train
+    - test
+
+dvc:
+  add_paths:
+    - "data/train"
+    - "data/test"

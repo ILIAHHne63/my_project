@@ -1,9 +1,11 @@
-import argparse
-import os
+# src/trainers/inference.py
+from pathlib import Path
 
+import fire
 import numpy as np
 import torch
-import yaml
+from hydra import compose, initialize
+from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 
 from ..data.datamodule import FloodNetDataModule
@@ -11,76 +13,51 @@ from ..data.dataset_download import download_data_from_gdrive_folder
 from ..models.unet_lightning import UNetLitModule
 from ..utils.seed import seed_everything
 
-# Цветовая палитра для классов FloodNet
-PALETTE = {
-    0: (0, 0, 0),  # фон
-    1: (128, 0, 0),  # класс 1
-    2: (0, 128, 0),  # класс 2
-    3: (128, 128, 0),  # класс 3
-    4: (0, 0, 128),  # класс 4
-    5: (128, 0, 128),  # класс 5
-    6: (0, 128, 128),  # класс 6
-    7: (128, 128, 128),  # класс 7
-}
-
 
 def apply_palette(mask_np: np.ndarray, palette: dict) -> Image.Image:
-    """
-    Преобразует 2D-массив меток в RGB-изображение по палитре.
-    """
     h, w = mask_np.shape
     color_img = np.zeros((h, w, 3), dtype=np.uint8)
     for cls_id, color in palette.items():
-        color_img[mask_np == cls_id] = color
+        color_img[mask_np == int(cls_id)] = color
     return Image.fromarray(color_img)
 
 
-def save_mask(mask_tensor: torch.Tensor, output_path: str, palette: dict):
-    """
-    Сохраняет тензор меток в цветное PNG-изображение.
-    """
+def save_mask(mask_tensor: torch.Tensor, output_path: Path, palette: dict):
     mask_np = mask_tensor.detach().cpu().numpy().astype(np.uint8)
     img = apply_palette(mask_np, palette)
-    img.save(output_path)
+    img.save(str(output_path))
 
 
-def main(
-    config_path: str, checkpoint_path: str, output_dir: str, need_data_download: bool
-):
-    # Загрузка конфига и фиксация сидов
-    with open(config_path, "r") as f:
-        cfg = yaml.safe_load(f)
-    seed_everything(cfg["seed"])
+def run_inference(cfg: DictConfig):
+    """Вся логика инференса, cfg уже готов."""
+    print(OmegaConf.to_yaml(cfg))
 
-    # Создаем папки для GT и предсказаний
-    gt_dir = os.path.join(output_dir, "gt")
-    pred_dir = os.path.join(output_dir, "predicted")
-    os.makedirs(gt_dir, exist_ok=True)
-    os.makedirs(pred_dir, exist_ok=True)
+    seed_everything(cfg.seed)
 
-    # Скачать данные при необходимости
-    if need_data_download:
-        download_data_from_gdrive_folder()
+    out_root = Path(cfg.inference.output_dir)
+    gt_dir = out_root / "gt"
+    pred_dir = out_root / "predicted"
+    gt_dir.mkdir(parents=True, exist_ok=True)
+    pred_dir.mkdir(parents=True, exist_ok=True)
 
-    # Инициализация DataModule
+    if cfg.inference.need_data_download:
+        download_data_from_gdrive_folder(cfg)
+
     dm = FloodNetDataModule(
-        data_dir=cfg["data"]["data_dir"],
-        img_size=cfg["data"]["img_size"],
-        batch_size=1,
-        num_workers=cfg["data"]["num_workers"],
-        pin_memory=cfg["data"].get("pin_memory", True),
+        data_dir=cfg.data.data_dir,
+        img_size=cfg.data.img_size,
+        batch_size=cfg.inference.batch_size,
+        num_workers=cfg.data.num_workers,
+        pin_memory=cfg.data.pin_memory,
     )
     dm.prepare_data()
     dm.setup(stage="test")
 
-    # Загрузка модели
-    lit_model = UNetLitModule.load_from_checkpoint(checkpoint_path, cfg=cfg)
+    lit_model = UNetLitModule.load_from_checkpoint(cfg.model.checkpoint_path, cfg=cfg)
     lit_model.eval()
     lit_model.freeze()
 
-    # Инференс
-    test_loader = dm.test_dataloader()
-    for idx, batch in enumerate(test_loader):
+    for idx, batch in enumerate(dm.test_dataloader()):
         images, gt_masks = batch
         images = images.to(lit_model.device)
 
@@ -89,43 +66,24 @@ def main(
         preds = torch.argmax(logits, dim=1).squeeze(0)
         gt = gt_masks.squeeze(0)
 
-        # Пути сохранения масок
-        gt_path = os.path.join(gt_dir, f"gt_{idx:04d}.png")
-        pred_path = os.path.join(pred_dir, f"pred_{idx:04d}.png")
+        gt_path = gt_dir / f"gt_{idx:04d}.png"
+        pred_path = pred_dir / f"pred_{idx:04d}.png"
 
-        # Сохранение
-        save_mask(gt, gt_path, PALETTE)
-        save_mask(preds, pred_path, PALETTE)
+        save_mask(gt, gt_path, cfg.palette)
+        save_mask(preds, pred_path, cfg.palette)
+
+
+def inference(checkpoint_path: str):
+    """
+    Точка входа для fire: принимает checkpoint_path,
+    остальное подтягивается из Hydra-конфигов.
+    """
+    with initialize(config_path="../../configs", version_base="1.3"):
+        cfg = compose(config_name="config")
+
+    cfg.model.checkpoint_path = checkpoint_path
+    run_inference(cfg)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="FloodNet UNet Inference with Palette")
-    parser.add_argument(
-        "--config",
-        "-c",
-        type=str,
-        default="configs/floodnet_unet.yaml",
-        help="Path to config file",
-    )
-    parser.add_argument(
-        "--checkpoint",
-        "-ckpt",
-        type=str,
-        required=True,
-        help="Path to model checkpoint (.ckpt)",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        type=str,
-        default="outputs",
-        help="Directory to save GT and predicted masks",
-    )
-    parser.add_argument(
-        "--need_data_download",
-        "-n",
-        type=bool,
-        help="Download dataset if needed",
-    )
-    args = parser.parse_args()
-    main(args.config, args.checkpoint, args.output, args.need_data_download)
+    fire.Fire(inference)

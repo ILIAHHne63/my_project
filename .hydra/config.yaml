@@ -1,0 +1,93 @@
+data:
+  data_dir: data/
+  img_size: 256
+  batch_size: 4
+  num_workers: 2
+  pin_memory: true
+experiment:
+  name: floodnet_unet
+  output_dir: experiments/floodnet_unet
+model:
+  num_classes: 8
+  lr: 0.0001
+  checkpoint_path: ""
+trainer:
+  max_epochs: 1
+  accelerator: gpu
+  devices: 1
+  deterministic: false
+  benchmark: true
+  val_check_interval: 1.0
+  precision: 32
+  default_root_dir: experiments/floodnet_unet
+  need_data_download: true
+callbacks:
+  checkpoint:
+    enabled: true
+    monitor: val_mIoU
+    save_top_k: 3
+    mode: max
+    dirpath: experiments/floodnet_unet/checkpoints
+    filename: unet-{epoch:02d}
+  early_stop:
+    enabled: false
+  lr_monitor:
+    enabled: false
+  device_stats:
+    enabled: false
+logger:
+  mlflow:
+    save_dir: plots/mlflow_logs
+    name: floodnet_unet
+    enable: true
+    experiment_name: FloodNet_MLFlow
+    tracking_uri: http://127.0.0.1:8080
+inference:
+  output_dir: outputs
+  need_data_download: false
+  batch_size: 1
+palette:
+  0:
+    - 0
+    - 0
+    - 0
+  1:
+    - 128
+    - 0
+    - 0
+  2:
+    - 0
+    - 128
+    - 0
+  3:
+    - 128
+    - 128
+    - 0
+  4:
+    - 0
+    - 0
+    - 128
+  5:
+    - 128
+    - 0
+    - 128
+  6:
+    - 0
+    - 128
+    - 128
+  7:
+    - 128
+    - 128
+    - 128
+download:
+  folder_id: 1AJ8Ufs9J4QgIjRoet9DG5TFrNAgmtQJ0
+  dest_dir: data
+  tar_name: tiny-floodnet-challenge.tar.gz
+  subsets:
+    - train
+    - test
+dvc:
+  add_paths:
+    - data/train
+    - data/test
+seed: 42

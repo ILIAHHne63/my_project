@@ -1,4 +1,6 @@
-# UNet-Prod: Flood Segmentation with UNet
+# DEPRECIATED
+
+UNet-Prod: Flood Segmentation with UNet
 
 ## Описание проекта
 

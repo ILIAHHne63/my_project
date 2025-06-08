@@ -1,0 +1,10 @@
+trainer:
+  max_epochs: 1
+  accelerator: "gpu" # или "cpu"
+  devices: 1
+  deterministic: False
+  benchmark: True
+  val_check_interval: 1.0
+  precision: 32
+  default_root_dir: "experiments/floodnet_unet" # автоматически подставится в ModelCheckpoint и логи
+  need_data_download: true

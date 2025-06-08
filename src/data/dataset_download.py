@@ -4,54 +4,52 @@ import tarfile
 from pathlib import Path
 
 import gdown
+from omegaconf import DictConfig
 
 
-def download_data_from_gdrive_folder(
-    folder_id: str = "1AJ8Ufs9J4QgIjRoet9DG5TFrNAgmtQJ0", dest_dir: str = "data"
-):
+def download_data_from_gdrive_folder(cfg: DictConfig):
     """
-    Скачивает все файлы из Google Drive-папки (folder_id) в локальную папку dest_dir,
-    затем упаковывает ее содержимое в tar-файл и добавляет его в DVC.
-
-    Параметры:
-    - folder_id: str — идентификатор Google Drive-папки (из URL).
-    - dest_dir: str — папка, куда сохранять файлы (по умолчанию "data/raw").
+    Скачивает файлы из Google Drive, распаковывает их
+    и добавляет через DVC.
+    Параметры берутся из cfg.download и cfg.dvc.
     """
-    base_path = Path(dest_dir)
-    base_path.mkdir(parents=True, exist_ok=True)
+    download_cfg = cfg.download
+    folder_id = download_cfg.folder_id
+    dest_dir = Path(download_cfg.dest_dir)
+    tar_path = dest_dir / download_cfg.tar_name
 
-    download_url = f"https://drive.google.com/uc?id={folder_id}&export=download"
-    tar_path = base_path / "tiny-floodnet-challenge.tar.gz"
+    dest_dir.mkdir(parents=True, exist_ok=True)
 
-    gdown.download(url=download_url, output=str(tar_path), quiet=False)
+    # Скачиваем tar.gz
+    url = f"https://drive.google.com/uc?id={folder_id}&export=download"
+    print(f"Downloading {url} → {tar_path}")
+    gdown.download(url=url, output=str(tar_path), quiet=False)
+
+    # Распаковываем
     with tarfile.open(tar_path, mode="r:*") as tar:
-        tar.extractall(path=base_path)
+        tar.extractall(path=dest_dir)
 
-    gdown.download_folder(
-        id=folder_id, output="data/tiny-floodnet-challenge.tar.gz", quiet=False
-    )
-    extracted = base_path / "tiny-floodnet-challenge"
-    for subset in ["train", "test"]:
+    # Перемещаем поддиректории train/test
+    extracted = dest_dir / download_cfg.tar_name.replace(".tar.gz", "")
+    for subset in download_cfg.subsets:
         src = extracted / subset
-        dst = base_path / subset
+        dst = dest_dir / subset
         if src.exists():
-            print(f"Moving {src} → {dst}")
-            # если dst уже есть — можно удалить или перезаписать
             if dst.exists():
                 shutil.rmtree(dst)
             src.rename(dst)
         else:
-            print(f"Папка не найдена: {src}")
+            print(f"Warning: subset folder not found: {src}")
 
+    # Удаляем распакованную папку
     if extracted.exists():
-        print(f"Removing directory {extracted}")
         shutil.rmtree(extracted)
-    try:
-        subprocess.run(
-            ["dvc", "add", "data/test"],
-            check=True,
-        )
-        subprocess.run(["dvc", "add", "data/train"], check=True)
-    except subprocess.CalledProcessError as e:
-        print("Ошибка при выполнении 'dvc add' или 'git commit':", e)
-        raise
+
+    # Добавляем данные в DVC
+    for path in cfg.dvc.add_paths:
+        try:
+            print(f"Running: dvc add {path}")
+            subprocess.run(["dvc", "add", path], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error running `dvc add {path}`: {e}")
+            raise

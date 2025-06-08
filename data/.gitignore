@@ -1,2 +1,7 @@
 /test
 /train
+
+*.tar.gz
+
+# Игнорировать все .par
+*.part
