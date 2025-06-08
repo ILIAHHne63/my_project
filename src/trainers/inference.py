@@ -1,7 +1,6 @@
 # src/trainers/inference.py
 from pathlib import Path
 
-import fire
 import numpy as np
 import torch
 from hydra import compose, initialize
@@ -53,7 +52,8 @@ def run_inference(cfg: DictConfig):
     dm.prepare_data()
     dm.setup(stage="test")
 
-    lit_model = UNetLitModule.load_from_checkpoint(cfg.model.checkpoint_path, cfg=cfg)
+    lit_model = UNetLitModule.load_from_checkpoint(cfg.inference.model)
+    lit_model.cfg = cfg
     lit_model.eval()
     lit_model.freeze()
 
@@ -73,17 +73,7 @@ def run_inference(cfg: DictConfig):
         save_mask(preds, pred_path, cfg.palette)
 
 
-def inference(checkpoint_path: str):
-    """
-    Точка входа для fire: принимает checkpoint_path,
-    остальное подтягивается из Hydra-конфигов.
-    """
+if __name__ == "__main__":
     with initialize(config_path="../../configs", version_base="1.3"):
         cfg = compose(config_name="config")
-
-    cfg.model.checkpoint_path = checkpoint_path
     run_inference(cfg)
-
-
-if __name__ == "__main__":
-    fire.Fire(inference)

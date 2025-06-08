@@ -1,5 +1,5 @@
 trainer:
-  max_epochs: 1
+  max_epochs: 20
   accelerator: "gpu" # или "cpu"
   devices: 1
   deterministic: False

@@ -2,10 +2,10 @@ callbacks:
   checkpoint:
     enabled: True
     monitor: "val_mIoU"
-    save_top_k: 3
+    save_top_k: 1
     mode: "max"
     dirpath: "experiments/floodnet_unet/checkpoints"
-    filename: "unet-{epoch:02d}"
+    filename: "cpkt-unet"
   early_stop:
     enabled: False
   lr_monitor:
