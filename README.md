@@ -89,8 +89,8 @@
    source $(poetry env info --path)/bin/activate
    ```
 
-5. ** Настройка MLflow для отслеживания экспериментов** Для запуска
-   локального сервера MLflow:
+5. **Настройка MLflow для отслеживания экспериментов**
+   Для запуска локального сервера MLflow:
 
    ```bash
    poetry run mlflow server \
