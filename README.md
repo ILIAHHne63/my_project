@@ -3,7 +3,7 @@
 ## Описание проекта
 
 **UNet-Prod** — это модульный проект для семантической сегментации затопленных
-участков на спутниковых изображениях с использованием архитектуры UNet. Датасет доступен по следующей ссылке: [https://drive.google.com/uc?id=1vLTGoRO1zeQSZ0mfRTgVC9W6R5Z94UoO](https://drive.google.com/uc?id=1vLTGoRO1zeQSZ0mfRTgVC9W6R5Z94UoO)]. Цель
+участков на спутниковых изображениях с использованием архитектуры UNet. Датасет доступен по следующей ссылке: [https://drive.google.com/uc?id=1vLTGoRO1zeQSZ0mfRTgVC9W6R5Z94UoO](https://drive.google.com/uc?id=1vLTGoRO1zeQSZ0mfRTgVC9W6R5Z94UoO). Цель
 проекта — предоставить полный конвейер от подготовки данных до реализации
 тренировки и инференса.:
 
